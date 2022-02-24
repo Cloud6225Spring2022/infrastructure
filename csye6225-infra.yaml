@@ -127,7 +127,7 @@ Resources:
           Value: !Sub ${AWS::StackName}-Public Route Table
       VpcId: !Ref VPC
 
-# Add a Public Route to the Route Table
+# Add Public Route to the Route Table
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
