@@ -64,7 +64,7 @@ Resources:
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: Test VPC
+          Value: !Sub ${AWS::StackName}-VPC
 
 # Create Internet Gateway
   InternetGateway:
@@ -72,7 +72,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: Test IGW
+          Value: !Sub ${AWS::StackName}-IGW
 
 # Attach Internet Gateway to VPC
   InternetGatewayAttachment:
@@ -90,7 +90,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: Public Subnet 1
+          Value: !Sub ${AWS::StackName}-PublicSubnet1
       VpcId: !Ref VPC
 
 # Create Public Subnet2
@@ -102,7 +102,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: Public Subnet 2
+          Value: !Sub ${AWS::StackName}-PublicSubnet2
       VpcId: !Ref VPC
 
 
@@ -115,7 +115,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: Public Subnet 3
+          Value: !Sub ${AWS::StackName}-PublicSubnet3
       VpcId: !Ref VPC
 
 # Create Route Table
@@ -124,7 +124,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: Public Route Table
+          Value: !Sub ${AWS::StackName}-Public Route Table
       VpcId: !Ref VPC
 
 # Add a Public Route to the Route Table
@@ -168,7 +168,7 @@ Resources:
           CidrIp: !Ref SSHLocation
       Tags:
         - Key: Name
-          Value: SSH Security Group
+          Value: !Sub ${AWS::StackName}-SSH Security Group
       VpcId: !Ref VPC
 
 Outputs:
