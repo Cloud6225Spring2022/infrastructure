@@ -9,14 +9,14 @@ Metadata:
         Label: 
           default: "VPC CIDR"
         Parameters: 
-          - VPCCIDRDEV
+          - Vpc
       - 
         Label: 
           default: "Subnet CIDR"
         Parameters:
-          - PublicSubnet1CIDRDEV
-          - PublicSubnet2CIDRDEV
-          - PublicSubnet3CIDRDEV
+          - PublicSubnet1Cidr
+          - PublicSubnet2Cidr
+          - PublicSubnet3Cidr
       - 
         Label: 
           default: "SSH CIDR"
@@ -24,22 +24,22 @@ Metadata:
           - SSHLocation
 
 Parameters:
-  VPCCIDRDEV:
+  Vpc:
     Default: 10.0.0.0/16
     Description: Please enter Ip range for this VPC
     Type: String
 
-  PublicSubnet1CIDRDEV:
+  PublicSubnet1Cidr:
     Default: 10.0.0.0/24
     Description: Please enter Ip range for this VPC
     Type: String
 
-  PublicSubnet2CIDRDEV:
+  PublicSubnet2Cidr:
     Default: 10.0.1.0/24
     Description: Please enter Ip range for this VPC
     Type: String
 
-  PublicSubnet3CIDRDEV:
+  PublicSubnet3Cidr:
     Default: 10.0.2.0/24
     Description: Please enter Ip range for this VPC
     Type: String
@@ -53,12 +53,13 @@ Parameters:
     MinLength: '9'
     Type: String
 
+
 Resources:
 # Create VPC
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VPCCIDRDEV
+      CidrBlock: !Ref Vpc
       EnableDnsHostnames: true
       EnableDnsSupport: true
       InstanceTenancy: default
@@ -86,11 +87,11 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: !Ref PublicSubnet1CIDRDEV
+      CidrBlock: !Ref PublicSubnet1Cidr
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}-PublicSubnet1
+          Value: !Sub ${AWS::StackName}-Public Subnet 1
       VpcId: !Ref VPC
 
 # Create Public Subnet2
@@ -98,11 +99,11 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
-      CidrBlock: !Ref PublicSubnet2CIDRDEV
+      CidrBlock: !Ref PublicSubnet2Cidr
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}-PublicSubnet2
+          Value: !Sub ${AWS::StackName}-Public Subnet 2
       VpcId: !Ref VPC
 
 
@@ -111,11 +112,11 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select [ 2, !GetAZs '' ]
-      CidrBlock: !Ref PublicSubnet3CIDRDEV
+      CidrBlock: !Ref PublicSubnet3Cidr
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}-PublicSubnet3
+          Value: !Sub ${AWS::StackName}-Public Subnet 3
       VpcId: !Ref VPC
 
 # Create Route Table
@@ -127,7 +128,7 @@ Resources:
           Value: !Sub ${AWS::StackName}-Public Route Table
       VpcId: !Ref VPC
 
-# Add Public Route to the Route Table
+# Add a Public Route to the Route Table
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
@@ -156,20 +157,74 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet3
 
-# Create Security Group for the Bastion Host aka Jump Box
+# Create Security Group
   SSHSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: SSH Security Group
       SecurityGroupIngress:
+        # SSH access
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !Ref SSHLocation
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIpv6: ::/0
+        # HTTP access
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIpv6: ::/0
+        # HTTPS access
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIpv6: ::/0
+        # Webapp access
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIpv6: ::/0
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-SSH Security Group
       VpcId: !Ref VPC
+# Create EC2 Instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-06d4163947d2aba60
+      InstanceType: t2.micro
+      KeyName: application
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: "gp2"
+            DeleteOnTermination: "true"
+            VolumeSize: "20"
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnet2
+          GroupSet: [!Ref SSHSecurityGroup]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-EC2"
+          
 
 Outputs:
 # Export VPC ID
