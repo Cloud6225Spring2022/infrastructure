@@ -52,6 +52,10 @@ Parameters:
     MaxLength: '18'
     MinLength: '9'
     Type: String
+    
+  ImageId:
+    Description: Please enter ImageID
+    Type: String
 
 
 Resources:
@@ -207,7 +211,7 @@ Resources:
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-06d4163947d2aba60
+      ImageId: !Ref ImageId
       InstanceType: t2.micro
       KeyName: application
       BlockDeviceMappings:
