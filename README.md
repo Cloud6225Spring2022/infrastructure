@@ -14,7 +14,8 @@ AWS VPC using Cloudformation
 
 Commands to run the yaml file:-
 
-aws cloudformation create-stack --stack-name VPCstack --template-body file://csye6225-infra.yaml
+aws cloudformation create-stack --stack-name VPCstack --template-body file://csye6225-infra.yaml --capabilities CAPABILITY_NAMED_IAM
+
 
 command to delete the stack:-
 
