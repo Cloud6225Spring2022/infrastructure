@@ -117,6 +117,10 @@ Parameters:
     Default: false
     Description: Creates a Multi-AZ MySQL Amazon RDS database instance
     Type: String
+    
+  ImageId:
+    Description: Image ID
+    Type: String
 
 
 
@@ -457,8 +461,7 @@ Resources:
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0018eab0bd0ac4a37
-      # !Ref ImageId
+      ImageId: !Ref ImageId
       InstanceType: t2.micro
       KeyName: application
       UserData:
@@ -466,14 +469,24 @@ Resources:
           !Sub |
             #!/bin/bash
             echo "# App Environment Variables"
-            echo "export DB_HOST=${DatabaseInstance.Endpoint.Address}" >> /etc/environment
-            echo "export DB_PORT=${DatabaseInstance.Endpoint.Port}" >> /etc/environment
-            echo "export DB_DATABASE=${DatabaseName}" >> /etc/environment
-            echo "export DB_USERNAME=${DatabaseUser}" >> /etc/environment
-            echo "export DB_PASSWORD=${DatabasePassword}" >> /etc/environment
-            echo "export FILESYSTEM_DRIVER=s3" >> /etc/environment
-            echo "export AWS_BUCKET_NAME="bucket.dev.khismatrao.me"" >> /etc/environment
-            usermod -a -G www-data ubuntu
+            cd /home/ec2-user/
+            touch environment.env
+            echo "DB_HOST=${DatabaseInstance.Endpoint.Address}" >> /home/ec2-user/environment.env
+            echo "DB_PORT=${DatabaseInstance.Endpoint.Port}" >> /home/ec2-user/environment.env
+            echo "DB_DATABASE=${DatabaseName}" >> /home/ec2-user/environment.env
+            echo "DB_USERNAME=${DatabaseUser}" >> /home/ec2-user/environment.env
+            echo "DB_PASSWORD=${DatabasePassword}" >> /home/ec2-user/environment.env
+            echo "FILESYSTEM_DRIVER=s3" >> /home/ec2-user/environment.env
+            echo "AWS_BUCKET_NAME="bucket.dev.khismatrao.me"" >> /home/ec2-user/environment.env
+            sudo chmod 777 /home/ec2-user/environment.env
+            sudo chmod 777 /home/ec2-user/webapp.sh
+            cd /etc/systemd/system
+            sudo chmod 777 application.service
+            sudo systemctl daemon-reload
+            sudo systemctl start application.service
+            sudo systemctl enable application.service
+            chown -R ec2-user:www-data /var/www
+            usermod -a -G www-data ec2-user
 
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
