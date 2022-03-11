@@ -121,6 +121,10 @@ Parameters:
   ImageId:
     Description: Image ID
     Type: String
+    
+  ProfileName:
+    Description: Profile Name
+    Type: String
 
 
 
@@ -398,8 +402,8 @@ Resources:
               - s3:Put*
               - s3:List*
             Resource:
-              - arn:aws:s3:::bucket.dev.khismatrao.me/*
-              - arn:aws:s3:::bucket.dev.khismatrao.me
+              - arn:aws:s3:::${S3Bucket}/*
+              - arn:aws:s3:::${S3Bucket}
       Roles:
         -
           !Ref DemoEc2InstanceRole
@@ -407,7 +411,24 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: bucket.dev.khismatrao.me
+      BucketName: !Join
+        - "."
+        - - !Select
+            - 0
+            - !Split
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref "AWS::StackId"
+          - Ref: "ProfileName"
+          - "khismatrao.me"
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+         - ServerSideEncryptionByDefault:
+             SSEAlgorithm: AES256
       LifecycleConfiguration:
         Rules:
          - Id: Rule for s3 bucket
@@ -468,7 +489,7 @@ Resources:
             echo "DB_USERNAME=${DatabaseUser}" >> /home/ec2-user/environment.env
             echo "DB_PASSWORD=${DatabasePassword}" >> /home/ec2-user/environment.env
             echo "FILESYSTEM_DRIVER=s3" >> /home/ec2-user/environment.env
-            echo "AWS_BUCKET_NAME="bucket.dev.khismatrao.me"" >> /home/ec2-user/environment.env
+            echo "AWS_BUCKET_NAME=${S3Bucket}" >> /home/ec2-user/environment.env
             sudo chmod 777 /home/ec2-user/environment.env
             sudo chmod 777 /home/ec2-user/webapp.sh
             cd /etc/systemd/system
