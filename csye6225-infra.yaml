@@ -125,6 +125,14 @@ Parameters:
   ProfileName:
     Description: Profile Name
     Type: String
+    
+  AccessKey:
+    Description: AccessKey
+    Type: String
+    
+  SecretKey:
+    Description: SecretKey
+    Type: String 
 
 
 
@@ -488,6 +496,8 @@ Resources:
             echo "DB_DATABASE=${DatabaseName}" >> /home/ec2-user/environment.env
             echo "DB_USERNAME=${DatabaseUser}" >> /home/ec2-user/environment.env
             echo "DB_PASSWORD=${DatabasePassword}" >> /home/ec2-user/environment.env
+            echo "ACCESS_KEY=${AccessKey}" >> /home/ec2-user/environment.env
+            echo "SECRET_KEY=${SecretKey}" >> /home/ec2-user/environment.env
             echo "FILESYSTEM_DRIVER=s3" >> /home/ec2-user/environment.env
             echo "AWS_BUCKET_NAME=${S3Bucket}" >> /home/ec2-user/environment.env
             sudo chmod 777 /home/ec2-user/environment.env
