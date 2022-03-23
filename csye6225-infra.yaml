@@ -609,7 +609,7 @@ Resources:
         - us-east-1a
         - us-east-1b
         - us-east-1c
-      Cooldown: '300'
+      Cooldown: '60'
       DesiredCapacity: '3'
       HealthCheckGracePeriod: 90
       HealthCheckType: EC2
