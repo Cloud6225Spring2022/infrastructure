@@ -143,7 +143,8 @@ Parameters:
   HostedZoneID:
     Description: domain Name for S3 Bucket Naming
     Type: String
-    
+    Default: Z05006571JOPH6DH7WHKA
+
 Resources:
   VPC:
     Type: "AWS::EC2::VPC"
