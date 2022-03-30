@@ -138,7 +138,7 @@ Parameters:
   DomainName:
     Description: domain Name for S3 Bucket Naming
     Type: String
-    Default: prod.khismatrao.me
+    Default: demo.khismatrao.me
 
   HostedZoneID:
     Description: domain Name for S3 Bucket Naming
@@ -409,6 +409,41 @@ Resources:
        - !Ref DemoEc2InstanceRole
 
 
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join
+        - "."
+        - - !Select
+            - 0
+            - !Split
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref "AWS::StackId"
+          - Ref: "ProfileName"
+          - "khismatrao.me"
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: Rule for log prefix
+            Prefix: logs
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 30
+                StorageClass: STANDARD_IA
+
   DemoInstanceS3Policy:
     Type: AWS::IAM::Policy
     Properties:
@@ -430,41 +465,6 @@ Resources:
       Roles:
         -
           !Ref DemoEc2InstanceRole
-
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Join
-        - "."
-        - - !Select
-            - 0
-            - !Split
-              - "-"
-              - !Select
-                - 2
-                - !Split
-                  - "/"
-                  - !Ref "AWS::StackId"
-          - Ref: "ProfileName"
-          - "akshaysinghbayes.me"
-      AccessControl: Private
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      LifecycleConfiguration:
-        Rules:
-          - Id: Rule for log prefix
-            Prefix: logs
-            Status: Enabled
-            Transitions:
-              - TransitionInDays: 30
-                StorageClass: STANDARD_IA
 
   DatabaseSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -509,54 +509,7 @@ Resources:
       VPCSecurityGroups: 
         - !Ref DBSecurityGroup
 
-# Application Load Balancer
-  # asgLaunchTemplate:
-  #   Type: AWS::EC2::LaunchTemplate
-  #   Properties:
-  #     LaunchTemplateName: !Sub '${AWS::StackName}-launch-template'
-  #     LaunchTemplateData:
-  #       BlockDeviceMappings:
-  #       - DeviceName: /dev/xvda
-  #         Ebs:
-  #           VolumeSize: 20
-  #           VolumeType: "gp2"
-  #           DeleteOnTermination: true
-  #       ImageId: !Ref ImageId
-  #       InstanceType: t2.micro
-  #       KeyName: aws-user
-  #       IamInstanceProfile: 
-  #         Name: !Ref DemoInstanceProfile
-  #         # GroupSet: [!Ref SSHSecurityGroup]
-  #       SecurityGroupIds:
-  #        - !Ref SSHSecurityGroup
-  #         # GroupSet: [!Ref SSHSecurityGroup]
-  #       UserData:
-  #         Fn::Base64: 
-  #           !Sub |
-  #             #!/bin/bash
-  #             echo "------------------------------Setting Env Vars------------------------------------"
-  #             cd /home/ec2-user/
-  #             touch environment.env
-  #             echo "DB_HOST=${DatabaseInstance.Endpoint.Address}" >> /home/ec2-user/environment.env
-  #             echo "DB_PORT=${DatabaseInstance.Endpoint.Port}" >> /home/ec2-user/environment.env
-  #             echo "DB_DATABASE=${DatabaseName}" >> /home/ec2-user/environment.env
-  #             echo "DB_USERNAME=${DatabaseUser}" >> /home/ec2-user/environment.env
-  #             echo "DB_PASSWORD=${DatabasePassword}" >> /home/ec2-user/environment.env
-  #             echo "ACCESS_KEY=${AccessKey}" >> /home/ec2-user/environment.env
-  #             echo "SECRET_KEY=${SecretKey}" >> /home/ec2-user/environment.env
-  #             echo "FILESYSTEM_DRIVER=s3" >> /home/ec2-user/environment.env
-  #             echo "AWS_BUCKET_NAME=${S3Bucket}" >> /home/ec2-user/environment.env
-  #             sudo chmod 777 /home/ec2-user/environment.env
-  #             sudo chmod 777 /home/ec2-user/webapp.sh
-  #             echo "------------------------------Starting Webapp------------------------------------"
-  #             cd /etc/systemd/system
-  #             sudo chmod 777 myservice.service
-  #             sudo systemctl daemon-reload
-  #             sudo systemctl start myservice.service
-  #             sudo systemctl enable myservice.service
-  #             chown -R ec2-user:www-data /var/www
-  #             usermod -a -G www-data ec2-user
-  #             echo "------------------------------Completed Process------------------------------------"
+ 
 
   asglaunchconfig:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -610,15 +563,12 @@ Resources:
         - us-east-1b
         - us-east-1c
       Cooldown: '60'
-      DesiredCapacity: '3'
+      DesiredCapacity: '1'
       HealthCheckGracePeriod: 90
       HealthCheckType: EC2
       LaunchConfigurationName: !Ref asglaunchconfig
-      # LaunchTemplate:
-      #   LaunchTemplateId: !Ref asgLaunchTemplate
-      #   Version: !GetAtt asgLaunchTemplate.LatestVersionNumber
       MaxSize: '5'
-      MinSize: '3'
+      MinSize: '1'
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-asg
@@ -629,16 +579,6 @@ Resources:
         - !Ref PublicSubnet1
         - !Ref PublicSubnet2
         - !Ref PublicSubnet3
-
-  # asgCPUPolicy:
-  #   Type: AWS::AutoScaling::ScalingPolicy
-  #   Properties:
-  #     AutoScalingGroupName: !Ref asgWebApp
-  #     PolicyType: TargetTrackingScaling
-  #     TargetTrackingConfiguration:
-  #       PredefinedMetricSpecification:
-  #         PredefinedMetricType: ASGAverageCPUUtilization
-  #       TargetValue: 1
 
   WebServerScaleUpPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
@@ -768,3 +708,60 @@ Resources:
           Fn::GetAtt:
           - loadBalancer
           - CanonicalHostedZoneID
+
+  # Code deploy
+  codeDeployEC2ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Sid: codeDeployEC2ServiceRole
+          Effect: Allow
+          Principal:
+            Service: codedeploy.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      RoleName: CodeDeployEC2ServiceRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-CodeDeployEC2ServiceRole"
+
+  ec2Application:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: csye6225-webapp
+      ComputePlatform: Server #EC2/On-premises
+  
+  ec2DeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName:
+        Ref: ec2Application
+      DeploymentGroupName: csye6225-webapp-deployment
+      AutoScalingGroups:
+      - Ref: asgWebApp
+      ServiceRoleArn:
+        Fn::GetAtt:
+        - codeDeployEC2ServiceRole
+        - Arn
+      LoadBalancerInfo:
+        TargetGroupInfoList:
+          - Name: !GetAtt loadBalancerTargetGroup.TargetGroupName
+      DeploymentStyle:
+        DeploymentType: IN_PLACE
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      Ec2TagFilters:
+      - Key: Application Role
+        Value: Web Server
+        Type: KEY_AND_VALUE
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      AutoRollbackConfiguration:
+        Enabled: 'False' #True - then uncomment below
+        # Events:
+        # - DEPLOYMENT_FAILURE
+        # - DEPLOYMENT_STOP_ON_ALARM
+        # - DEPLOYMENT_STOP_ON_REQUEST
