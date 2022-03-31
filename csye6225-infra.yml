@@ -119,7 +119,7 @@ Parameters:
     Type: String
 
   ImageId:
-    Description: Please enter ImageID
+    Description: Please provide Image Id
     Type: String
 
   ProfileName:
@@ -127,23 +127,29 @@ Parameters:
     Type: String
     Description: Enter the profile that you want this to run on either dev or demo
 
-  AccessKey:
-    Description: AccessKey
-    Type: String
+  # AccessKey:
+  #   Description: AccessKey
+  #   Type: String
     
-  SecretKey:
-    Description: SecretKey
-    Type: String
+  # SecretKey:
+  #   Description: SecretKey
+  #   Type: String
 
   DomainName:
-    Description: domain Name for S3 Bucket Naming
+    Description: Domain Name
     Type: String
-    Default: demo.khismatrao.me
+    Default: prod.khismatrao.me
 
   HostedZoneID:
-    Description: domain Name for S3 Bucket Naming
+    Description: Hosted Zone ID
     Type: String
     Default: Z05006571JOPH6DH7WHKA
+
+  GitHubStackName:
+    Description: GitHub Roles and Policies Stack Name
+    Type: String
+    Default: policies-stack
+
 
 Resources:
   VPC:
@@ -238,7 +244,6 @@ Resources:
       SubnetId: !Ref PublicSubnet3
 
   #Private Subnet for RDS
-
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -314,8 +319,8 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable3
       SubnetId: !Ref PrivateSubnet3
 
-#Create Security Group for the Application Load Balancer 
-  ALBSecurityGroup:
+ #Create Security Group for the Application Load Balancer 
+  LoadBalancerSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Enable HTTP/HTTPS access on port 80/443
@@ -340,11 +345,11 @@ Resources:
           CidrIpv6: ::/0
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}-ALB Security Group
+          Value: !Sub ${AWS::StackName}-Load Balancer Security Group
       VpcId: !Ref VPC
 
   #Create Security Group
-  SSHSecurityGroup:
+  WebAppSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: SSH Security Group
@@ -357,18 +362,18 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIpv6: ::/0    
+          CidrIpv6: ::/0
         # Web Server
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
-          SourceSecurityGroupId: !Ref ALBSecurityGroup                  
+          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-SSH Security Group
       VpcId: !Ref VPC
 
-  #Create DB Group
+  #Create DB Security Group
   DBSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -378,36 +383,64 @@ Resources:
         - IpProtocol: tcp
           FromPort: 3306
           ToPort: 3306
-          SourceSecurityGroupId: !Ref SSHSecurityGroup
+          SourceSecurityGroupId: !Ref WebAppSecurityGroup
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-DB Security Group
       VpcId: !Ref VPC
 
-  DemoEc2InstanceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: "EC2-CSYE6225"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Principal:
-              Service:
-                - "ec2.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      Path: "/"
+  # DemoEc2InstanceRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     RoleName: "EC2-CSYE6225"
+  #     AssumeRolePolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         -
+  #           Effect: "Allow"
+  #           Principal:
+  #             Service:
+  #               - "ec2.amazonaws.com"
+  #           Action:
+  #             - "sts:AssumeRole"
+  #     Path: "/"
 
   DemoInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties: 
       InstanceProfileName: demo-ec2-instance-profile
       Path: /
-      Roles: 
-       - !Ref DemoEc2InstanceRole
+      Roles:
+      - Fn::ImportValue:
+          Fn::Sub: "${GitHubStackName}-ec2ExecutionRoleId"
+      # Roles: 
+      #  - !Ref DemoEc2InstanceRole
 
+  DemoInstanceS3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: WebAppS3
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - s3:DeleteObject
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListObject
+            Resource:
+              - !Sub arn:aws:s3:::${S3Bucket}/*
+              - !Sub arn:aws:s3:::${S3Bucket}
+              - !Sub arn:aws:s3:::codedeploy.khismatrao.me/*
+              - !Sub arn:aws:s3:::codedeploy.khismatrao.me
+      Roles:
+      - Fn::ImportValue:
+          Fn::Sub: "${GitHubStackName}-ec2ExecutionRoleId"
+      # Roles:
+      #   -
+      #     !Ref DemoEc2InstanceRole
 
   S3Bucket:
     Type: AWS::S3::Bucket
@@ -444,28 +477,6 @@ Resources:
               - TransitionInDays: 30
                 StorageClass: STANDARD_IA
 
-  DemoInstanceS3Policy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: WebAppS3
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          -
-            Effect: Allow
-            Action:
-              - s3:DeleteObject
-              - s3:GetObject
-              - s3:PutObject
-              - s3:ListObject
-            Resource:
-              - !Sub arn:aws:s3:::${S3Bucket}/*
-              - !Sub arn:aws:s3:::${S3Bucket}
-
-      Roles:
-        -
-          !Ref DemoEc2InstanceRole
-
   DatabaseSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -477,7 +488,7 @@ Resources:
       Tags:
         - Key: Name
           Value: database subnets
-  
+
   MyDBParameterGroup:
     Type: AWS::RDS::DBParameterGroup
     Properties:
@@ -509,8 +520,6 @@ Resources:
       VPCSecurityGroups: 
         - !Ref DBSecurityGroup
 
- 
-
   asglaunchconfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -521,7 +530,7 @@ Resources:
       ImageId: !Ref ImageId
       IamInstanceProfile: !Ref DemoInstanceProfile
       SecurityGroups:
-        - !Ref SSHSecurityGroup
+        - !Ref WebAppSecurityGroup
       BlockDeviceMappings:
       - DeviceName: /dev/xvda
         Ebs:
@@ -539,8 +548,6 @@ Resources:
           echo "DB_DATABASE=${DatabaseName}" >> /home/ec2-user/environment.env
           echo "DB_USERNAME=${DatabaseUser}" >> /home/ec2-user/environment.env
           echo "DB_PASSWORD=${DatabasePassword}" >> /home/ec2-user/environment.env
-          echo "ACCESS_KEY=${AccessKey}" >> /home/ec2-user/environment.env
-          echo "SECRET_KEY=${SecretKey}" >> /home/ec2-user/environment.env
           echo "FILESYSTEM_DRIVER=s3" >> /home/ec2-user/environment.env
           echo "AWS_BUCKET_NAME=${S3Bucket}" >> /home/ec2-user/environment.env
           sudo chmod 777 /home/ec2-user/environment.env
@@ -644,7 +651,7 @@ Resources:
       Name: !Sub ${AWS::StackName}-load-balancer
       Scheme: internet-facing
       SecurityGroups:
-        - !Ref ALBSecurityGroup
+        - !Ref LoadBalancerSecurityGroup
       Subnets:
         - !Ref PublicSubnet1
         - !Ref PublicSubnet2
@@ -660,7 +667,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 90
-      HealthCheckPath: '/healthz'
+      HealthCheckPath: '/'
       HealthCheckPort: '8080'
       HealthCheckProtocol: 'HTTP'
       HealthCheckTimeoutSeconds: 60
@@ -709,7 +716,7 @@ Resources:
           - loadBalancer
           - CanonicalHostedZoneID
 
-  # Code deploy
+# Code deploy
   codeDeployEC2ServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -734,7 +741,7 @@ Resources:
     Type: AWS::CodeDeploy::Application
     Properties:
       ApplicationName: csye6225-webapp
-      ComputePlatform: Server #EC2/On-premises
+      ComputePlatform: Server
   
   ec2DeploymentGroup:
     Type: AWS::CodeDeploy::DeploymentGroup
@@ -748,20 +755,20 @@ Resources:
         Fn::GetAtt:
         - codeDeployEC2ServiceRole
         - Arn
-      LoadBalancerInfo:
-        TargetGroupInfoList:
-          - Name: !GetAtt loadBalancerTargetGroup.TargetGroupName
+      # LoadBalancerInfo:
+      #   TargetGroupInfoList: 
+      #   - Name: !GetAtt loadBalancerTargetGroup.TargetGroupName
       DeploymentStyle:
         DeploymentType: IN_PLACE
-        DeploymentOption: WITH_TRAFFIC_CONTROL
+        DeploymentOption: WITHOUT_TRAFFIC_CONTROL
       Ec2TagFilters:
       - Key: Application Role
         Value: Web Server
         Type: KEY_AND_VALUE
       DeploymentConfigName: CodeDeployDefault.AllAtOnce
       AutoRollbackConfiguration:
-        Enabled: 'False' #True - then uncomment below
-        # Events:
-        # - DEPLOYMENT_FAILURE
+        Enabled: 'True' #False - then comment below
+        Events:
+        - DEPLOYMENT_FAILURE
         # - DEPLOYMENT_STOP_ON_ALARM
         # - DEPLOYMENT_STOP_ON_REQUEST
