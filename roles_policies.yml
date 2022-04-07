@@ -64,8 +64,8 @@ Resources:
         Version: '2012-10-17'
         Statement:
         - Action:
-          - s3:Get*
-          - s3:List*
+          - s3:GetObject
+          - s3:ListObject
           Effect: Allow
           Resource:
           - Fn::Sub: arn:aws:s3:::codedeploy.${domainName}/*
@@ -95,8 +95,8 @@ Resources:
         Statement:
         - Action:
           - s3:PutObject
-          - s3:Get* #can be ignored
-          - s3:List* #can be ignored
+          - s3:GetObject #can be ignored
+          - s3:ListObject #can be ignored
           Effect: Allow
           Resource:
             Fn::Sub: arn:aws:s3:::codedeploy.${domainName}/*
