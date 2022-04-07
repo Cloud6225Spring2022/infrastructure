@@ -5,10 +5,10 @@ Parameters:
     Description: Domain Name
     Type: String
     Default: khismatrao.me
-  # cloudWatchAgentPolicyArn:
-  #   Description: CloudWatchAgentServerPolicy ARN
-  #   Type: String
-  #   Default: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  cloudWatchAgentPolicyArn:
+    Description: CloudWatchAgentServerPolicy ARN
+    Type: String
+    Default: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
 Resources:
   githubEc2AmiPolicyId:
     Type: AWS::IAM::ManagedPolicy
@@ -119,7 +119,7 @@ Resources:
       RoleName: EC2ExecutionRole
       ManagedPolicyArns:
       - Ref: codeDeployEc2S3PolicyId
-      # - Ref: cloudWatchAgentPolicyArn
+      - Ref: cloudWatchAgentPolicyArn
       Tags:
       - Key: Name
         Value:
