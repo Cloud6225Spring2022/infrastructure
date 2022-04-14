@@ -9,9 +9,6 @@ Parameters:
     Description: CloudWatchAgentServerPolicy ARN
     Type: String
     Default: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-  # AppStackName:
-  #   Description: GitHub Roles and Policies Stack Name
-  #   Type: String
 Resources:
   githubEc2AmiPolicyId:
     Type: AWS::IAM::ManagedPolicy
@@ -161,7 +158,7 @@ Resources:
   dynamoDB:
     Type: AWS::DynamoDB::Table
     Properties:
-       TableName: "Account"
+       TableName: "csye"
        ProvisionedThroughput: 
           ReadCapacityUnits: "5"
           WriteCapacityUnits: "5"
@@ -187,111 +184,23 @@ Resources:
           Value:
             Fn::Sub: "${AWS::StackName}-dynamoDBTable"
 
-  # LambdaPolicy:
-  #   Type: AWS::IAM::Policy
-  #   Properties:
-  #     PolicyName: CodeDeploy-EC2-S3
-  #     PolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         -
-  #           Effect: Allow
-  #           Action:
-  #             - logs:CreateLogGroup
-  #           Resource:
-  #             - arn:aws:logs:us-east-1:820852419355:*
-  #         -
-  #           Effect: Allow
-  #           Action:
-  #             - logs:CreateLogStream
-  #             - logs:PutLogEvents
-  #           Resource:
-  #             - arn:aws:logs:us-east-1:820852419355:log-group:/aws/lambda/csye6225-spring2022:*
-  #         -
-  #           Effect: Allow
-  #           Action:
-  #             - sns:Subscribe
-  #             - sns:Receive
-  #             - sns:Unsubscribe
-  #           Resource: !Ref SNSTopic
-  #         -
-  #           Effect: Allow
-  #           Action:
-  #             - dynamodb:PutItem
-  #           Resource:
-  #             - arn:aws:dynamodb:us-east-1:820852419355:table/Account
-  #         -
-  #           Effect: Allow
-  #           Action:
-  #             - ses:SendEmail
-  #             - ses:SendRawEmail
-  #           Resource:
-  #             - arn:aws:ses:us-east-1:030616714081:identity/*
-  #     Roles:
-  #       -
-  #         !Ref LambdaRole
-
-  # LambdaRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     RoleName: LambdaRole
-  #     AssumeRolePolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         -
-  #           Effect: Allow
-  #           Principal:
-  #             Service:
-  #               - lambda.amazonaws.com
-  #           Action:
-  #             - sts:AssumeRole
-  #     Path: /        
-     
-  # LambdaFunction:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     Code:
-  #         S3Bucket: "codedeploy.sandeepwagh.me"
-  #         S3Key: "SNS.zip"
-  #     Handler: "index.handler"
-  #     Runtime: "nodejs14.x"
-  #     FunctionName: "csye6225-spring2022"
-  #     Role: !GetAtt LambdaRole.Arn
-      
-  # SNSTopic:
-  #   Type: AWS::SNS::Topic
-  #   Properties:
-  #     TopicName: "csye6225-myTopic"
-  #     FifoTopic: false
-  #     Subscription:  
-  #       - 
-  #         Endpoint: !GetAtt LambdaFunction.Arn
-  #         Protocol: "lambda"
-            
-  # DDBTable:
-  #   Type: AWS::DynamoDB::Table
-  #   Properties:
-  #     TableName: "Account"
-  #     ProvisionedThroughput: 
-  #         ReadCapacityUnits: "5"
-  #         WriteCapacityUnits: "5"
-  #     AttributeDefinitions: 
-  #       - 
-  #         AttributeName: "username"
-  #         AttributeType: "S"
-  #       - 
-  #         AttributeName: "token"
-  #         AttributeType: "S"           
-  #     TimeToLiveSpecification:
-  #         AttributeName: "TimeToLive"
-  #         Enabled: TRUE
-  #     KeySchema: 
-  #       - 
-  #         AttributeName: "username"
-  #         KeyType: "HASH" 
-  #       - 
-  #         AttributeName: "token"
-  #         KeyType: "RANGE" 
+  DynamoDBPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DynamoDBPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:PutItem
+              - dynamodb:GetItem
+            Resource:
+              #- !GetAtt DynamoDB.Arn
+              - arn:aws:dynamodb:us-east-1:820852419355:table/csye
+      Roles:
+        - !Ref lambdaExecutionRole
+        - !Ref ec2ExecutionRoleId
 
   lambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -306,7 +215,6 @@ Resources:
       RoleName: LambdaExecutionRole
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      # - Ref: lambdaPolicy
       Tags:
       - Key: Name
         Value:
@@ -320,21 +228,20 @@ Resources:
         S3Bucket:
           Fn::Sub: codedeploy.${domainName}
         S3Key: SNS.zip
-      Handler: index.handler #class.methodName
+      Handler: index.handler
       Environment:
         Variables:
           domain:
             Ref: domainName
           table:
             Ref: dynamoDB
-            # Fn::ImportValue:
-            #   Fn::Sub: "${AppStackName}-dynamoDBTable"
+
       Role:
         Fn::GetAtt:
         - lambdaExecutionRole
         - Arn
-      Runtime: nodejs14.x #java11
-      MemorySize: 128 #128
+      Runtime: nodejs14.x
+      MemorySize: 128
       Timeout: 180
       # ReservedConcurrentExecutions: 5
       Tags:
@@ -382,9 +289,8 @@ Resources:
           - dynamodb:PutItem
           - dynamodb:UpdateItem
           Resource:
-            - arn:aws:dynamodb:us-east-1:820852419355:table/Account
-            # Fn::ImportValue:
-            #   Fn::Sub: "${AppStackName}-dynamoDBArn"
+            - arn:aws:dynamodb:us-east-1:820852419355:table/csye
+
         - Sid: Logs
           Effect: Allow
           Action:
@@ -398,7 +304,7 @@ Resources:
           - logs:CreateLogStream
           - logs:PutLogStream
           Resource:
-            - arn:aws:logs:us-east-1:820852419355:log-group:/aws/lambda/csye6225-spring2022:*
+            - arn:aws:logs:us-east-1:820852419355:log-group:/aws/lambda/csye6225-spring2022-logs:*
 
         - Sid: LambdaSESAccess
           Effect: Allow
@@ -439,8 +345,6 @@ Resources:
             Ref: topic
       Roles:
       - Ref: ec2ExecutionRoleId
-      # - Fn::ImportValue:
-      #     Fn::Sub: "${AWS::StackName}-ec2ExecutionRoleId"
 
 Outputs:
   ec2ExecutionRoleId:
