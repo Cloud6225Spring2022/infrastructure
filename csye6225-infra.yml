@@ -123,7 +123,7 @@ Parameters:
     Type: String
 
   ProfileName:
-    Default: demo
+    Default: prod
     Type: String
     Description: Enter the profile that you want this to run on either dev or demo
 
@@ -138,12 +138,12 @@ Parameters:
   DomainName:
     Description: Domain Name
     Type: String
-    Default: prod.khismatrao.me
+    Default: demo.khismatrao.me
 
   HostedZoneID:
     Description: Hosted Zone ID
     Type: String
-    Default: Z05006571JOPH6DH7WHKA
+    Default: Z089986629PJYL2YQVOJ7
 
   GitHubStackName:
     Description: GitHub Roles and Policies Stack Name
@@ -433,8 +433,8 @@ Resources:
             Resource:
               - !Sub arn:aws:s3:::${S3Bucket}/*
               - !Sub arn:aws:s3:::${S3Bucket}
-              - !Sub arn:aws:s3:::codedeploy.khismatrao.me/*
-              - !Sub arn:aws:s3:::codedeploy.khismatrao.me
+              - !Sub arn:aws:s3:::codedeploy.prod.khismatrao.me/*
+              - !Sub arn:aws:s3:::codedeploy.prod.khismatrao.me
       Roles:
       - Fn::ImportValue:
           Fn::Sub: "${GitHubStackName}-ec2ExecutionRoleId"
@@ -772,3 +772,25 @@ Resources:
         - DEPLOYMENT_FAILURE
         # - DEPLOYMENT_STOP_ON_ALARM
         # - DEPLOYMENT_STOP_ON_REQUEST
+
+  # DynamoDBPolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyName: DynamoDBPolicy
+  #     PolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         -
+  #           Effect: Allow
+  #           Action:
+  #             - dynamodb:PutItem
+  #             - dynamodb:GetItem
+  #             - dynamodb:BatchGetItem
+  #             - dynamodb:Scan
+  #             - dynamodb:Query
+  #             - dynamodb:ConditionCheckItem
+  #           Resource: 
+  #             - arn:aws:dynamodb:us-east-1:820852419355:table/Account
+  #     Roles:
+  #       -
+  #         !Ref codeDeployEC2ServiceRole
