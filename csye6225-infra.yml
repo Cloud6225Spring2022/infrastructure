@@ -150,6 +150,23 @@ Parameters:
     Type: String
     Default: policies-stack
 
+  certificateArn:
+    Description: Certificate ARN
+    Type: String
+    Default: arn:aws:acm:us-east-1:820852419355:certificate/2e841074-ca9f-44fe-8290-7db366d97a5d
+
+  RDScertificateArn:
+    Description: Certificate ARN
+    Type: String
+    Default: arn:aws:kms:us-east-1:820852419355:key/3278d441-40c3-418a-839a-9eb267ae4df1
+
+  EBScertificateArn:
+    Description: Certificate ARN
+    Type: String
+    Default: arn:aws:kms:us-east-1:820852419355:key/4911bf85-3bc3-47e4-bf4e-5caf7f5765c6
+
+
+
 
 Resources:
   VPC:
@@ -517,49 +534,97 @@ Resources:
       MasterUsername: !Ref DatabaseUser
       MasterUserPassword: !Ref DatabasePassword
       MultiAZ: !Ref MultiAZDatabase
+      StorageEncrypted: true
+      KmsKeyId: !Ref RDScertificateArn
       VPCSecurityGroups: 
         - !Ref DBSecurityGroup
 
   asglaunchconfig:
-    Type: AWS::AutoScaling::LaunchConfiguration
+    # Type: AWS::AutoScaling::LaunchConfiguration
+    # Properties:
+    #   LaunchConfigurationName: !Sub '${AWS::StackName}-asg_launch_config'
+    #   AssociatePublicIpAddress: "true"
+    #   InstanceType: t2.micro
+    #   KeyName: application
+    #   ImageId: !Ref ImageId
+    #   IamInstanceProfile: !Ref DemoInstanceProfile
+    #   SecurityGroups:
+    #     - !Ref WebAppSecurityGroup
+    #   BlockDeviceMappings:
+    #   - DeviceName: /dev/xvda
+    #     Ebs:
+    #       VolumeSize: 20
+    #       VolumeType: "gp2"
+    #       Encrypted: true
+    #       KmsKeyId: "arn:aws:kms:us-east-1:820852419355:key/4911bf85-3bc3-47e4-bf4e-5caf7f5765c6"
+    #       DeleteOnTermination: true
+    #   UserData:
+    #     Fn::Base64: !Sub |
+    #       #!/bin/bash
+    #       echo "# App Environment Variables"
+    #       cd /home/ec2-user/
+    #       touch environment.env
+    #       echo "DB_HOST=${DatabaseInstance.Endpoint.Address}" >> /home/ec2-user/environment.env
+    #       echo "DB_PORT=${DatabaseInstance.Endpoint.Port}" >> /home/ec2-user/environment.env
+    #       echo "DB_DATABASE=${DatabaseName}" >> /home/ec2-user/environment.env
+    #       echo "DB_USERNAME=${DatabaseUser}" >> /home/ec2-user/environment.env
+    #       echo "DB_PASSWORD=${DatabasePassword}" >> /home/ec2-user/environment.env
+    #       echo "FILESYSTEM_DRIVER=s3" >> /home/ec2-user/environment.env
+    #       echo "AWS_BUCKET_NAME=${S3Bucket}" >> /home/ec2-user/environment.env
+    #       sudo chmod 777 /home/ec2-user/environment.env
+    #       sudo chmod 777 /home/ec2-user/webapp.sh
+    #       cd /etc/systemd/system
+    #       sudo chmod 777 application.service
+    #       sudo systemctl daemon-reload
+    #       sudo systemctl start application.service
+    #       sudo systemctl enable application.service
+    #       chown -R ec2-user:www-data /var/www
+    #       usermod -a -G www-data ec2-user
+    #       echo "------------------------------Completed Process------------------------------------"
+    Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchConfigurationName: !Sub '${AWS::StackName}-asg_launch_config'
-      AssociatePublicIpAddress: "true"
-      InstanceType: t2.micro
-      KeyName: application
-      ImageId: !Ref ImageId
-      IamInstanceProfile: !Ref DemoInstanceProfile
-      SecurityGroups:
-        - !Ref WebAppSecurityGroup
-      BlockDeviceMappings:
-      - DeviceName: /dev/xvda
-        Ebs:
-          VolumeSize: 20
-          VolumeType: "gp2"
-          DeleteOnTermination: true
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          echo "# App Environment Variables"
-          cd /home/ec2-user/
-          touch environment.env
-          echo "DB_HOST=${DatabaseInstance.Endpoint.Address}" >> /home/ec2-user/environment.env
-          echo "DB_PORT=${DatabaseInstance.Endpoint.Port}" >> /home/ec2-user/environment.env
-          echo "DB_DATABASE=${DatabaseName}" >> /home/ec2-user/environment.env
-          echo "DB_USERNAME=${DatabaseUser}" >> /home/ec2-user/environment.env
-          echo "DB_PASSWORD=${DatabasePassword}" >> /home/ec2-user/environment.env
-          echo "FILESYSTEM_DRIVER=s3" >> /home/ec2-user/environment.env
-          echo "AWS_BUCKET_NAME=${S3Bucket}" >> /home/ec2-user/environment.env
-          sudo chmod 777 /home/ec2-user/environment.env
-          sudo chmod 777 /home/ec2-user/webapp.sh
-          cd /etc/systemd/system
-          sudo chmod 777 application.service
-          sudo systemctl daemon-reload
-          sudo systemctl start application.service
-          sudo systemctl enable application.service
-          chown -R ec2-user:www-data /var/www
-          usermod -a -G www-data ec2-user
-          echo "------------------------------Completed Process------------------------------------"
+      LaunchTemplateName: !Sub '${AWS::StackName}-EC2-instance'
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: "/dev/xvda" 
+            Ebs:
+              VolumeSize: 20
+              VolumeType: gp2
+              DeleteOnTermination: true
+              Encrypted: true
+              KmsKeyId: !Ref EBScertificateArn
+        KeyName: application
+        InstanceType: t2.micro
+        IamInstanceProfile: 
+          Name: !Ref DemoInstanceProfile
+        SecurityGroupIds:
+          - !Ref WebAppSecurityGroup
+        Placement:
+          Tenancy: default
+        ImageId: !Ref ImageId
+        UserData:
+         Fn::Base64: !Sub |
+           #!/bin/bash
+           echo "# App Environment Variables"
+           cd /home/ec2-user/
+           touch environment.env
+           echo "DB_HOST=${DatabaseInstance.Endpoint.Address}" >> /home/ec2-user/environment.env
+           echo "DB_PORT=${DatabaseInstance.Endpoint.Port}" >> /home/ec2-user/environment.env
+           echo "DB_DATABASE=${DatabaseName}" >> /home/ec2-user/environment.env
+           echo "DB_USERNAME=${DatabaseUser}" >> /home/ec2-user/environment.env
+           echo "DB_PASSWORD=${DatabasePassword}" >> /home/ec2-user/environment.env
+           echo "FILESYSTEM_DRIVER=s3" >> /home/ec2-user/environment.env
+           echo "AWS_BUCKET_NAME=${S3Bucket}" >> /home/ec2-user/environment.env
+           sudo chmod 777 /home/ec2-user/environment.env
+           sudo chmod 777 /home/ec2-user/webapp.sh
+           cd /etc/systemd/system
+           sudo chmod 777 application.service
+           sudo systemctl daemon-reload
+           sudo systemctl start application.service
+           sudo systemctl enable application.service
+           chown -R ec2-user:www-data /var/www
+           usermod -a -G www-data ec2-user
+           echo "------------------------------Completed Process------------------------------------" 
 
   asgWebApp:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -573,9 +638,11 @@ Resources:
       DesiredCapacity: '1'
       HealthCheckGracePeriod: 90
       HealthCheckType: EC2
-      LaunchConfigurationName: !Ref asglaunchconfig
-      MaxSize: '5'
+      LaunchTemplate:
+        LaunchTemplateId: !Ref asglaunchconfig
+        Version: 1
       MinSize: '1'
+      MaxSize: '5'
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-asg
@@ -693,8 +760,10 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref loadBalancerTargetGroup
       LoadBalancerArn: !Ref loadBalancer
-      Port: 80
-      Protocol: HTTP
+      Certificates: 
+        - !Ref certificateArn
+      Port: 443
+      Protocol: HTTPS
 
 # DNS record
   myDNSRecord:
