@@ -365,7 +365,7 @@ Resources:
           Effect: Allow
           Principal:
             AWS: 
-            - 'arn:aws:iam::820852419355:user/ghactions-app'
+            - 'arn:aws:iam::820852419355:user/Vaishu_Prod'
             - 'arn:aws:iam::820852419355:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling'
           Action:
           - 'kms:Create*'
@@ -385,7 +385,7 @@ Resources:
           Effect: Allow
           Principal:
             AWS: 
-            - 'arn:aws:iam::820852419355:user/ghactions-app'
+            - 'arn:aws:iam::820852419355:user/Vaishu_Prod'
             - 'arn:aws:iam::820852419355:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling'
             - 'arn:aws:iam::820852419355:root'
           Action:
@@ -400,7 +400,7 @@ Resources:
           Effect: Allow
           Principal:
             AWS:
-            - 'arn:aws:iam::820852419355:user/ghactions-app'
+            - 'arn:aws:iam::820852419355:user/Vaishu_Prod'
             - 'arn:aws:iam::820852419355:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling'
             - 'arn:aws:iam::820852419355:root'
           Action:
@@ -435,7 +435,7 @@ Resources:
           Effect: Allow
           Principal:
             AWS: 
-            - 'arn:aws:iam::820852419355:user/ghactions-app'
+            - 'arn:aws:iam::820852419355:user/Vaishu_Prod'
             - 'arn:aws:iam::820852419355:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling'
           Action:
           - 'kms:Create*'
@@ -455,7 +455,7 @@ Resources:
           Effect: Allow
           Principal:
             AWS: 
-            - 'arn:aws:iam::820852419355:user/ghactions-app'
+            - 'arn:aws:iam::820852419355:user/Vaishu_Prod'
             - 'arn:aws:iam::820852419355:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling'
             - 'arn:aws:iam::820852419355:root'
           Action:
@@ -470,7 +470,7 @@ Resources:
           Effect: Allow
           Principal:
             AWS:
-            - 'arn:aws:iam::820852419355:user/ghactions-app'
+            - 'arn:aws:iam::820852419355:user/Vaishu_Prod'
             - 'arn:aws:iam::820852419355:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling'
             - 'arn:aws:iam::820852419355:root'
           Action:
