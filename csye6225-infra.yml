@@ -509,6 +509,7 @@ Resources:
       Description: CloudFormation Sample MySQL Parameter Group
       Family: mysql5.7
       Parameters:
+        performance_schema: 1
         sql_mode: NO_ENGINE_SUBSTITUTION
         max_allowed_packet: 1073741824
         innodb_buffer_pool_size: '{DBInstanceClassMemory*3/4}'
@@ -527,7 +528,7 @@ Resources:
       DBParameterGroupName: !Ref MyDBParameterGroup
       Engine: MySQL
       PubliclyAccessible : true
-      EngineVersion: 5.7.31
+      EngineVersion: 5.7.37
       MasterUsername: !Ref DatabaseUser
       MasterUserPassword: !Ref DatabasePassword
       MultiAZ: !Ref MultiAZDatabase
