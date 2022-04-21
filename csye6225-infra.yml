@@ -158,15 +158,12 @@ Parameters:
   RDScertificateArn:
     Description: Certificate ARN
     Type: String
-    Default: arn:aws:kms:us-east-1:820852419355:key/3278d441-40c3-418a-839a-9eb267ae4df1
+    Default: arn:aws:kms:us-east-1:820852419355:key/6a3f991d-742c-447d-925e-153f1f800bf5
 
   EBScertificateArn:
     Description: Certificate ARN
     Type: String
-    Default: arn:aws:kms:us-east-1:820852419355:key/4911bf85-3bc3-47e4-bf4e-5caf7f5765c6
-
-
-
+    Default: arn:aws:kms:us-east-1:820852419355:key/441444f1-8c64-431f-9c00-d48e00500ab6
 
 Resources:
   VPC:
