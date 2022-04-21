@@ -20,3 +20,5 @@ aws cloudformation create-stack --stack-name VPCstack --template-body file://csy
 command to delete the stack:-
 
 aws cloudformation delete-stack --stack-name VPCstack
+Certificate import command:
+aws acm import-certificate --certificate fileb://demo_khismatrao_me.crt --certificate-chain fileb://demo_khismatrao_me.ca-bundle --private-key fileb://private.pem
